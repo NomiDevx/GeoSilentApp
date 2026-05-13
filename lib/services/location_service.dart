@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/zone_model.dart';
@@ -5,6 +6,24 @@ import '../models/zone_model.dart';
 class LocationService {
   // Request location permission
   static Future<bool> requestLocationPermission() async {
+    // On web, permission_handler does not support locationWhenInUse.
+    // The browser handles the location prompt automatically via geolocator.
+    if (kIsWeb) {
+      try {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          final requested = await Geolocator.requestPermission();
+          return requested == LocationPermission.whileInUse ||
+              requested == LocationPermission.always;
+        }
+        return permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Native platforms: use permission_handler
     final status = await Permission.locationWhenInUse.request();
     if (status.isGranted) {
       return true;

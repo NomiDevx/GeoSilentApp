@@ -20,8 +20,10 @@ class AuthProvider with ChangeNotifier {
   Future<void> initialize() async {
     if (_isInitialized) return; // Prevent multiple initializations
 
+    // Do NOT call notifyListeners() here — initialize() is called from
+    // initState(), and notifying synchronously during a build causes:
+    // "setState() or markNeedsBuild() called during build."
     _isLoading = true;
-    notifyListeners();
 
     try {
       _user = await _authService.getCurrentUser();

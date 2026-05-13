@@ -31,8 +31,34 @@
 
   <title>geo_silent</title>
   <link rel="manifest" href="manifest.json">
+  <script>
+    // Dynamically load Google Maps API from the .env file for Web
+    fetch('assets/.env')
+      .then(response => response.text())
+      .then(text => {
+        const match = text.match(/GOOGLE_MAP_API_KEY=(.*)/);
+        if (match && match[1]) {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${match[1].trim()}`;
+          script.onload = loadFlutter;
+          document.head.append(script);
+        } else {
+          loadFlutter();
+        }
+      })
+      .catch(e => {
+        console.error('Failed to load .env for Maps API', e);
+        loadFlutter();
+      });
+
+    function loadFlutter() {
+      const flutterScript = document.createElement('script');
+      flutterScript.src = "flutter_bootstrap.js";
+      flutterScript.async = true;
+      document.body.append(flutterScript);
+    }
+  </script>
 </head>
 <body>
-  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

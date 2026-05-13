@@ -9,10 +9,16 @@ import 'package:geo_silent/screens/login_screen.dart';
 import 'package:geo_silent/screens/signup_screen.dart';
 import 'package:geo_silent/screens/home_screen.dart';
 import 'package:geo_silent/theme.dart';
+import 'firebase_options.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+
+  await dotenv.load(fileName: ".env");
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const GeoMuteApp());
 }
 

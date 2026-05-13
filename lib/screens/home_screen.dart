@@ -33,23 +33,36 @@ class _HomeScreenState extends State<HomeScreen>
       duration: const Duration(milliseconds: 500),
     );
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+      CurvedAnimation(
+          parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
 
-    // Initialize providers
+    // Initialize providers after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final zoneProvider = Provider.of<ZoneProvider>(context, listen: false);
-      final locationProvider = Provider.of<LocationProvider>(
-        context,
-        listen: false,
-      );
+      final authProvider =
+          Provider.of<AuthProvider>(context, listen: false);
+      final zoneProvider =
+          Provider.of<ZoneProvider>(context, listen: false);
+      final locationProvider =
+          Provider.of<LocationProvider>(context, listen: false);
 
       if (authProvider.user != null) {
         zoneProvider.initializeZones(authProvider.user!.uid);
         locationProvider.startTracking();
       }
+
+      // React to location updates AFTER the frame is done, not during build
+      locationProvider.addListener(() {
+        if (!mounted) return;
+        final pos = locationProvider.currentPosition;
+        if (pos != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            zoneProvider.checkCurrentLocation(pos.latitude, pos.longitude);
+          });
+        }
+      });
     });
   }
 
@@ -59,27 +72,62 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
+      // ── IndexedStack keeps all tabs alive, no push/pop needed ──
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: const [
+          _HomeTab(),
+          MapScreen(),
+          ActiveZonesScreen(),
+          ProfileScreen(),
+        ],
+      ),
+      bottomNavigationBar: CustomCurvedNavBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          if (_selectedIndex == index) return; // already on this tab
+          setState(() => _selectedIndex = index);
+        },
+      ),
+    );
+  }
+}
 
-    if (index == 1) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const MapScreen()),
-      );
-    } else if (index == 2) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ActiveZonesScreen()),
-      );
-    } else if (index == 3) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const ProfileScreen()),
-      );
-    }
+// ─────────────────────────────────────────────────────────────────────────────
+// Home tab content (extracted from old HomeScreen.build)
+// ─────────────────────────────────────────────────────────────────────────────
+class _HomeTab extends StatefulWidget {
+  const _HomeTab();
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    )..forward();
+    _scale = Tween<double>(begin: 0.97, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -88,263 +136,250 @@ class _HomeScreenState extends State<HomeScreen>
     final zoneProvider = Provider.of<ZoneProvider>(context);
     final locationProvider = Provider.of<LocationProvider>(context);
 
-    // Check zones when location updates
-    if (locationProvider.currentPosition != null) {
-      zoneProvider.checkCurrentLocation(
-        locationProvider.currentPosition!.latitude,
-        locationProvider.currentPosition!.longitude,
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: ScaleTransition(
-        scale: _scaleAnimation,
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome beck!',
-                          style: AppTheme.bodyMedium.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                        Text(
-                          authProvider.user?.name?.split(' ').first ?? 'User',
-                          style: AppTheme.headline2.copyWith(
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                    CircleAvatar(
-                      backgroundColor: AppTheme.primaryColor,
-                      child: Text(
-                        authProvider.user?.name?.substring(0, 1) ?? 'U',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 30),
-
-                // Animated GIF Square
-                Container(
-                  width: double.infinity,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
+    return ScaleTransition(
+      scale: _scale,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ── Header ──────────────────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Animated Lottie
-                      Center(
-                        child: Lottie.asset(
-                          'assets/animation/sound_waves.json',
-                          width: 300,
-                          height: 300,
-                          fit: BoxFit.contain,
+                      Text(
+                        'Welcome back!',
+                        style: AppTheme.bodyMedium.copyWith(
+                          color: AppTheme.textSecondary,
                         ),
                       ),
-                      // Overlay Text
-                      Positioned(
-                        bottom: 20,
-                        left: 20,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Geo Silent Active',
-                              style: AppTheme.headline3.copyWith(
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${zoneProvider.activeZonesCount} zones monitoring',
-                              style: AppTheme.bodyMedium.copyWith(
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        authProvider.user?.name?.split(' ').first ?? 'User',
+                        style: AppTheme.headline2.copyWith(
+                          color: AppTheme.primaryColor,
                         ),
                       ),
                     ],
                   ),
+                  CircleAvatar(
+                    backgroundColor: AppTheme.primaryColor,
+                    child: Text(
+                      authProvider.user?.name?.substring(0, 1) ?? 'U',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+
+              // ── Animated banner ──────────────────────────────────────
+              Container(
+                width: double.infinity,
+                height: 200,
+                decoration: BoxDecoration(
+                  gradient: AppTheme.primaryGradient,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-
-                const SizedBox(height: 24),
-
-                // Horizontal Buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Stack(
                   children: [
-                    Expanded(
-                      child: _buildInfoButton(
-                        icon: Icons.location_on,
-                        label: 'Current Location',
-                        value: locationProvider.locationName,
-                        onTap: () {},
+                    Center(
+                      child: Lottie.asset(
+                        'assets/animation/sound_waves.json',
+                        width: 300,
+                        height: 300,
+                        fit: BoxFit.contain,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildInfoButton(
-                        icon: Icons.place,
-                        label: 'Active Zones',
-                        value: '${zoneProvider.activeZonesCount}',
-                        onTap: () {},
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildInfoButton(
-                        icon: Icons.add_location_alt,
-                        label: 'Add Zone',
-                        value: 'Tap to add',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MapScreen(),
+                    Positioned(
+                      bottom: 20,
+                      left: 20,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Geo Silent Active',
+                            style: AppTheme.headline3.copyWith(
+                              color: Colors.white,
                             ),
-                          );
-                        },
-                        isAddButton: true,
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${zoneProvider.activeZonesCount} zones monitoring',
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
+              ),
 
-                const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
-                // Status Bars
-                Column(
-                  children: [
-                    StatusBar(
-                      title: 'Normal Zone',
-                      subtitle: 'Your phone is in normal mode',
-                      color: AppTheme.normalZoneColor,
-                      icon: Icons.volume_up,
-                      isActive: zoneProvider.currentZone == null,
+              // ── Quick info buttons ───────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: _buildInfoButton(
+                      icon: Icons.location_on_rounded,
+                      label: 'Current Location',
+                      value: locationProvider.locationName,
+                      onTap: () {},
                     ),
-                    const SizedBox(height: 16),
-                    StatusBar(
-                      title: 'Silent Zone',
-                      subtitle: zoneProvider.currentZone?.name ??
-                          'Not in any silent zone',
-                      color: AppTheme.silentZoneColor,
-                      icon: Icons.volume_off,
-                      isActive: zoneProvider.currentZone != null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildInfoButton(
+                      icon: Icons.place_rounded,
+                      label: 'Active Zones',
+                      value: '${zoneProvider.activeZonesCount}',
+                      onTap: () {},
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildInfoButton(
+                      icon: Icons.add_location_alt_rounded,
+                      label: 'Add Zone',
+                      value: 'Tap to add',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MapScreen(),
+                          ),
+                        );
+                      },
+                      isAddButton: true,
+                    ),
+                  ),
+                ],
+              ),
 
-                const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-                // Active Zones Title
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Your Silent Zones', style: AppTheme.headline3),
-                    Text(
-                      '${zoneProvider.zones.length} total',
-                      style: AppTheme.bodyMedium.copyWith(
-                        color: AppTheme.primaryColor,
-                        fontWeight: FontWeight.w600,
+              // ── Status bars ──────────────────────────────────────────
+              Column(
+                children: [
+                  StatusBar(
+                    title: 'Normal Zone',
+                    subtitle: 'Your phone is in normal mode',
+                    color: AppTheme.normalZoneColor,
+                    icon: Icons.volume_up,
+                    isActive: zoneProvider.currentZone == null,
+                  ),
+                  const SizedBox(height: 16),
+                  StatusBar(
+                    title: 'Silent Zone',
+                    subtitle: zoneProvider.currentZone?.name ??
+                        'Not in any silent zone',
+                    color: AppTheme.silentZoneColor,
+                    icon: Icons.volume_off,
+                    isActive: zoneProvider.currentZone != null,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Zones section ────────────────────────────────────────
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Your Silent Zones', style: AppTheme.headline3),
+                  Text(
+                    '${zoneProvider.zones.length} total',
+                    style: AppTheme.bodyMedium.copyWith(
+                      color: AppTheme.primaryColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              zoneProvider.isLoading
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 32.0),
+                        child: Lottie.asset(
+                          'assets/animations/loading.json',
+                          width: 100,
+                          height: 100,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                // Zones Grid
-                Expanded(
-                  child: zoneProvider.isLoading
+                    )
+                  : zoneProvider.zones.isEmpty
                       ? Center(
-                          child: Lottie.asset(
-                            'assets/animations/loading.json',
-                            width: 100,
-                            height: 100,
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(vertical: 32.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No silent zones added yet',
+                                  style: AppTheme.bodyLarge.copyWith(
+                                    color: AppTheme.textSecondary,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Tap "Add Zone" to create your first zone',
+                                  style: AppTheme.bodyMedium.copyWith(
+                                    color: AppTheme.textHint,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         )
-                      : zoneProvider.zones.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'No silent zones added yet',
-                                    style: AppTheme.bodyLarge.copyWith(
-                                      color: AppTheme.textSecondary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Tap "Add Zone" to create your first zone',
-                                    style: AppTheme.bodyMedium.copyWith(
-                                      color: AppTheme.textHint,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : GridView.builder(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                                childAspectRatio: 0.9,
-                              ),
-                              itemCount: zoneProvider.zones.length,
-                              itemBuilder: (context, index) {
-                                final zone = zoneProvider.zones[index];
-                                return AnimatedZoneCard(
-                                  zone: zone,
-                                  isActive:
-                                      zoneProvider.currentZone?.id == zone.id,
-                                  onTap: () {
-                                    // Show zone details
-                                  },
-                                );
-                              },
-                            ),
-                ),
-              ],
-            ),
+                      : GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 16,
+                            mainAxisSpacing: 16,
+                            childAspectRatio: 0.9,
+                          ),
+                          itemCount: zoneProvider.zones.length,
+                          itemBuilder: (context, index) {
+                            final zone = zoneProvider.zones[index];
+                            return AnimatedZoneCard(
+                              zone: zone,
+                              isActive:
+                                  zoneProvider.currentZone?.id == zone.id,
+                              onTap: () {},
+                            );
+                          },
+                        ),
+
+              // Bottom padding so content clears the floating nav bar
+              const SizedBox(height: 16),
+            ],
           ),
-        ),
-      ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: CustomCurvedNavBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
         ),
       ),
     );
@@ -361,15 +396,15 @@ class _HomeScreenState extends State<HomeScreen>
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
-        constraints: const BoxConstraints(minHeight: 140),
+        constraints: const BoxConstraints(minHeight: 130),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          boxShadow: const [
             BoxShadow(
               color: Colors.black12,
               blurRadius: 10,
-              offset: const Offset(0, 4),
+              offset: Offset(0, 4),
             ),
           ],
           border: isAddButton
@@ -379,12 +414,7 @@ class _HomeScreenState extends State<HomeScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color:
-                  isAddButton ? AppTheme.primaryColor : AppTheme.primaryColor,
-              size: 32,
-            ),
+            Icon(icon, color: AppTheme.primaryColor, size: 30),
             const SizedBox(height: 8),
             Text(
               label,
@@ -399,8 +429,9 @@ class _HomeScreenState extends State<HomeScreen>
             Text(
               value,
               style: AppTheme.bodyMedium.copyWith(
-                color:
-                    isAddButton ? AppTheme.primaryColor : AppTheme.textPrimary,
+                color: isAddButton
+                    ? AppTheme.primaryColor
+                    : AppTheme.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,

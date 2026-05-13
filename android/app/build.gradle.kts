@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     // START: FlutterFire Configuration
@@ -7,6 +10,15 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
+//this is change below
+
+val envFile = rootProject.file("../.env")
+val env = Properties()
+if (envFile.exists()) {
+    env.load(FileInputStream(envFile))
+}
+
+//this is change above
 
 android {
     namespace = "com.example.geo_silent"
@@ -27,10 +39,12 @@ android {
         applicationId = "com.example.geo_silent"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        manifestPlaceholders["googleMapApiKey"] = env.getProperty("GOOGLE_MAP_API_KEY") ?: ""
     }
 
     buildTypes {

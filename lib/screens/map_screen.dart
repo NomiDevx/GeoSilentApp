@@ -39,7 +39,9 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
-    _mapController.dispose();
+    if (_isMapReady) {
+      _mapController.dispose();
+    }
     super.dispose();
   }
 
@@ -405,6 +407,7 @@ class _MapScreenState extends State<MapScreen> {
             bottom: _selectedLocation != null ? 100 : 24,
             right: 24,
             child: FloatingActionButton(
+              heroTag: 'locationBtn',
               onPressed: _getCurrentLocation,
               backgroundColor: Colors.white,
               child: Icon(
@@ -421,6 +424,7 @@ class _MapScreenState extends State<MapScreen> {
               bottom: 24,
               right: 24,
               child: FloatingActionButton(
+                heroTag: 'closeBtn',
                 onPressed: () {
                   setState(() {
                     _selectedLocation = null;
@@ -551,4 +555,3 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 }
-
