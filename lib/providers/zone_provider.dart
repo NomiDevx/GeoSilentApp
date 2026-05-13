@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geo_silent/services/location_service.dart';
 import '../services/firestore_service.dart';
 import '../models/zone_model.dart';
+import '../services/ringer_service.dart';
 
 class ZoneProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
@@ -23,8 +24,16 @@ class ZoneProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _firestoreService.getUserZones(userId).listen((zones) {
+      _firestoreService.getUserZones(userId).listen((zones) async {
         _zones = zones;
+        
+        // Ensure we have DND permissions to silence the phone
+        bool hasDnd = await RingerService.hasDndPermission();
+        if (!hasDnd) {
+          await RingerService.requestDndPermission();
+        }
+
+        RingerService.startService(_zones);
         notifyListeners();
       });
     } catch (e) {

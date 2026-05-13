@@ -98,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen>
                           AnimatedTextKit(
                             animatedTexts: [
                               TyperAnimatedText(
-                                'Welcome Beck!',
+                                'Welcome Back!',
                                 textStyle: AppTheme.headline1.copyWith(
                                   color: AppTheme.primaryColor,
                                 ),

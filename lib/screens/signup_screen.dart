@@ -72,8 +72,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     );
 
     if (success) {
-      // Use rootNavigator: true to navigate from TabBarView
-      Navigator.of(context, rootNavigator: true).pushReplacementNamed('/home');
+      // Navigation is handled automatically by AppWrapper
     } else if (authProvider.errorMessage != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

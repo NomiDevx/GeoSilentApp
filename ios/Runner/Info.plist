@@ -45,5 +45,7 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>com.google.ios.api_key</key>
+	<string>AIzaSyD6LrvmRa4Sv2HY0Y8ZiTqx8NwuuEPj1UE</string>
 </dict>
 </plist>

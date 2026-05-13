@@ -24,6 +24,7 @@ class _MapScreenState extends State<MapScreen> {
   double _radius = 100.0;
   String _zoneName = '';
   ZoneType _selectedType = ZoneType.office;
+  SoundProfile _selectedProfile = SoundProfile.silent;
   bool _isLoadingLocation = false;
   LatLng _initialPosition = const LatLng(33.8938, 72.9346); // Default location
   bool _isMapReady = false;
@@ -317,6 +318,37 @@ class _MapScreenState extends State<MapScreen> {
 
                           const SizedBox(height: 20),
 
+                          Text(
+                            'Sound Profile',
+                            style: AppTheme.bodyLarge.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SegmentedButton<SoundProfile>(
+                            segments: const [
+                              ButtonSegment(value: SoundProfile.silent, label: Text('Silent'), icon: Icon(Icons.volume_off)),
+                              ButtonSegment(value: SoundProfile.vibration, label: Text('Vibrate'), icon: Icon(Icons.vibration)),
+                              ButtonSegment(value: SoundProfile.normal, label: Text('Normal'), icon: Icon(Icons.volume_up)),
+                            ],
+                            selected: {_selectedProfile},
+                            onSelectionChanged: (Set<SoundProfile> newSelection) {
+                              setState(() => _selectedProfile = newSelection.first);
+                            },
+                            style: ButtonStyle(
+                              backgroundColor: WidgetStateProperty.resolveWith<Color>(
+                                (Set<WidgetState> states) {
+                                  if (states.contains(WidgetState.selected)) {
+                                    return AppTheme.primaryColor.withOpacity(0.2);
+                                  }
+                                  return Colors.transparent;
+                                },
+                              ),
+                            ),
+                          ),
+
+                          const SizedBox(height: 20),
+
                           // Radius Slider
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,7 +539,7 @@ class _MapScreenState extends State<MapScreen> {
       latitude: _selectedLocation!.latitude,
       longitude: _selectedLocation!.longitude,
       radius: _radius,
-      soundProfile: SoundProfile.silent,
+      soundProfile: _selectedProfile,
       createdAt: DateTime.now(),
       isActive: true,
     );

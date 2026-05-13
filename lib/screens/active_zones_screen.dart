@@ -655,6 +655,26 @@ class _ActiveZonesScreenState extends State<ActiveZonesScreen>
                 SizedBox(
                   width: double.infinity,
                   height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _confirmDelete(context, zone, zoneProvider);
+                    },
+                    icon: const Icon(Icons.delete_forever_rounded),
+                    label: const Text('Delete Zone'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppTheme.errorColor,
+                      side: const BorderSide(color: AppTheme.errorColor),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     style: TextButton.styleFrom(
@@ -798,6 +818,36 @@ class _ActiveZonesScreenState extends State<ActiveZonesScreen>
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
+
+  void _confirmDelete(BuildContext context, SilentZone zone, ZoneProvider provider) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _DeleteSheet(
+        zone: zone,
+        onConfirm: () async {
+          Navigator.pop(context); // close sheet
+          final success = await provider.deleteZone(zone.id);
+          if (success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Zone "${zone.name}" deleted'),
+                backgroundColor: AppTheme.successColor,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Failed to delete zone'),
+                backgroundColor: AppTheme.errorColor,
+              ),
+            );
+          }
+        },
+      ),
+    );
+  }
 }
 
 // ── Deactivate confirmation sheet ────────────────────────────────────────
@@ -879,6 +929,115 @@ class _DeactivateSheet extends StatelessWidget {
               ),
               child: const Text(
                 'Yes, Deactivate',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Cancel button
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.textSecondary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Delete confirmation sheet ────────────────────────────────────────
+class _DeleteSheet extends StatelessWidget {
+  final SilentZone zone;
+  final VoidCallback onConfirm;
+
+  const _DeleteSheet({
+    required this.zone,
+    required this.onConfirm,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Warning icon
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              color: AppTheme.errorColor.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.delete_forever_rounded,
+              color: AppTheme.errorColor,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          Text(
+            'Delete Zone?',
+            style: AppTheme.headline3,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '"${zone.name}" will be permanently removed.',
+            textAlign: TextAlign.center,
+            style: AppTheme.bodyMedium.copyWith(
+              color: AppTheme.textSecondary,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 28),
+
+          // Confirm button
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: onConfirm,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.errorColor,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: const Text(
+                'Yes, Delete',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
             ),

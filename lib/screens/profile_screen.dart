@@ -3,6 +3,12 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/zone_provider.dart';
 import '../theme.dart';
+import 'settings/edit_profile_screen.dart';
+import 'settings/notifications_screen.dart';
+import 'settings/privacy_security_screen.dart';
+import 'settings/preferences_screen.dart';
+import 'settings/help_support_screen.dart';
+import 'settings/about_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -106,21 +112,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                     iconColor: AppTheme.primaryColor,
                     title: 'Edit Profile',
                     subtitle: 'Update your name and photo',
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EditProfileScreen())),
                   ),
                   _SettingTile(
                     icon: Icons.notifications_outlined,
                     iconColor: AppTheme.infoColor,
                     title: 'Notifications',
                     subtitle: 'Manage alert preferences',
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
                   ),
                   _SettingTile(
                     icon: Icons.security_rounded,
                     iconColor: AppTheme.successColor,
                     title: 'Privacy & Security',
                     subtitle: 'Password and data settings',
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrivacySecurityScreen())),
                   ),
                 ]),
               ),
@@ -134,21 +140,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                     iconColor: AppTheme.warningColor,
                     title: 'Preferences',
                     subtitle: 'Zone defaults and behavior',
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PreferencesScreen())),
                   ),
                   _SettingTile(
                     icon: Icons.help_outline_rounded,
                     iconColor: AppTheme.secondaryColor,
                     title: 'Help & Support',
                     subtitle: 'FAQs and contact us',
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HelpSupportScreen())),
                   ),
                   _SettingTile(
                     icon: Icons.info_outline_rounded,
                     iconColor: AppTheme.primaryLight,
                     title: 'About Geo Silent',
                     subtitle: 'Version 1.0.0',
-                    onTap: () {},
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AboutScreen())),
                   ),
                 ]),
               ),

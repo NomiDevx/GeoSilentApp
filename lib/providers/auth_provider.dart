@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../models/user_model.dart';
+import '../services/ringer_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -118,6 +119,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      await RingerService.stopService();
       await _authService.signOut();
       _user = null;
     } catch (e) {

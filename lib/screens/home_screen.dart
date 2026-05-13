@@ -321,10 +321,8 @@ class _HomeTabState extends State<_HomeTab>
                   ? Center(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 32.0),
-                        child: Lottie.asset(
-                          'assets/animations/loading.json',
-                          width: 100,
-                          height: 100,
+                        child: CircularProgressIndicator(
+                          color: AppTheme.primaryColor,
                         ),
                       ),
                     )
