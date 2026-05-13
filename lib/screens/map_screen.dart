@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/zone_provider.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
@@ -21,7 +22,7 @@ class _MapScreenState extends State<MapScreen> {
   final Set<Marker> _markers = {};
   final Set<Circle> _circles = {};
   LatLng? _selectedLocation;
-  double _radius = 100.0;
+  double _radius = 150.0;
   String _zoneName = '';
   ZoneType _selectedType = ZoneType.office;
   SoundProfile _selectedProfile = SoundProfile.silent;
@@ -36,6 +37,28 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _loadUserPreferences();
+  }
+
+  Future<void> _loadUserPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _radius = prefs.getDouble('default_radius') ?? 150.0;
+      final profileStr = prefs.getString('default_profile') ?? 'Silent';
+      switch (profileStr) {
+        case 'Vibrate':
+          _selectedProfile = SoundProfile.vibration;
+          break;
+        case 'Normal':
+          _selectedProfile = SoundProfile.normal;
+          break;
+        case 'Silent':
+        default:
+          _selectedProfile = SoundProfile.silent;
+          break;
+      }
+    });
   }
 
   @override
@@ -149,288 +172,79 @@ class _MapScreenState extends State<MapScreen> {
             tiltGesturesEnabled: false,
           ),
 
-          // Center indicator for map
+          // Top instruction banner when no location selected
           if (_selectedLocation == null)
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.location_on,
-                    size: 48,
-                    color: AppTheme.primaryColor,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Tap on map to select location',
-                    style: AppTheme.bodyLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
+            Positioned(
+              top: 16,
+              left: 20,
+              right: 20,
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 600),
+                curve: Curves.easeOutBack,
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, -20 * (1 - value)),
+                    child: Opacity(
+                      opacity: value,
+                      child: child,
                     ),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
-                ],
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.touch_app_rounded, color: AppTheme.primaryColor, size: 28),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Select Location',
+                              style: AppTheme.headline3.copyWith(fontSize: 16),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Tap anywhere on the map to set a new silent zone.',
+                              style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary, height: 1.4),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
 
           // Bottom Sheet for Zone Details
           if (_selectedLocation != null)
             DraggableScrollableSheet(
-              initialChildSize: 0.4,
-              minChildSize: 0.3,
-              maxChildSize: 0.7,
+              initialChildSize: 0.55,
+              minChildSize: 0.4,
+              maxChildSize: 0.9,
               builder: (context, scrollController) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(24),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: SingleChildScrollView(
-                      controller: scrollController,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: Container(
-                              width: 60,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          Text(
-                            'Create Silent Zone',
-                            style: AppTheme.headline2,
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Selected Coordinates
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey[200]!),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.location_pin,
-                                  color: AppTheme.primaryColor,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    _selectedLocation != null
-                                        ? 'Lat: ${_selectedLocation!.latitude.toStringAsFixed(6)}, '
-                                            'Lng: ${_selectedLocation!.longitude.toStringAsFixed(6)}'
-                                        : 'No location selected',
-                                    style: AppTheme.bodySmall.copyWith(
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Zone Name
-                          TextFormField(
-                            decoration: InputDecoration(
-                              labelText: 'Zone Name',
-                              hintText: 'e.g., Office, Mosque, Hospital',
-                              prefixIcon: Icon(
-                                Icons.location_on,
-                                color: AppTheme.primaryColor,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: AppTheme.primaryColor,
-                                  width: 2,
-                                ),
-                              ),
-                            ),
-                            onChanged: (value) => _zoneName = value,
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Zone Type Selection
-                          Text(
-                            'Zone Type',
-                            style: AppTheme.bodyLarge.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _zoneTypes.map((type) {
-                              final isSelected = _selectedType == type;
-                              return ChoiceChip(
-                                label: Text(_getTypeLabel(type)),
-                                selected: isSelected,
-                                onSelected: (selected) {
-                                  setState(() {
-                                    _selectedType = type;
-                                  });
-                                },
-                                backgroundColor: Colors.white,
-                                selectedColor: AppTheme.primaryColor,
-                                labelStyle: TextStyle(
-                                  color: isSelected
-                                      ? Colors.white
-                                      : AppTheme.textSecondary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? AppTheme.primaryColor
-                                        : Colors.grey[300]!,
-                                    width: isSelected ? 0 : 1,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          Text(
-                            'Sound Profile',
-                            style: AppTheme.bodyLarge.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          SegmentedButton<SoundProfile>(
-                            segments: const [
-                              ButtonSegment(value: SoundProfile.silent, label: Text('Silent'), icon: Icon(Icons.volume_off)),
-                              ButtonSegment(value: SoundProfile.vibration, label: Text('Vibrate'), icon: Icon(Icons.vibration)),
-                              ButtonSegment(value: SoundProfile.normal, label: Text('Normal'), icon: Icon(Icons.volume_up)),
-                            ],
-                            selected: {_selectedProfile},
-                            onSelectionChanged: (Set<SoundProfile> newSelection) {
-                              setState(() => _selectedProfile = newSelection.first);
-                            },
-                            style: ButtonStyle(
-                              backgroundColor: WidgetStateProperty.resolveWith<Color>(
-                                (Set<WidgetState> states) {
-                                  if (states.contains(WidgetState.selected)) {
-                                    return AppTheme.primaryColor.withOpacity(0.2);
-                                  }
-                                  return Colors.transparent;
-                                },
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // Radius Slider
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Radius: ${_radius.toStringAsFixed(0)} meters',
-                                style: AppTheme.bodyLarge.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Slider(
-                                value: _radius,
-                                min: 50,
-                                max: 500,
-                                divisions: 9,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _radius = value;
-                                    _updateMarkers();
-                                  });
-                                },
-                                activeColor: AppTheme.primaryColor,
-                                inactiveColor: Colors.grey[300],
-                              ),
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text('50m', style: AppTheme.bodySmall),
-                                  Text('250m', style: AppTheme.bodySmall),
-                                  Text('500m', style: AppTheme.bodySmall),
-                                ],
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 24),
-
-                          // Save Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 56,
-                            child: ElevatedButton(
-                              onPressed: () =>
-                                  _saveZone(authProvider, zoneProvider),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primaryColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                elevation: 4,
-                              ),
-                              child: zoneProvider.isLoading
-                                  ? SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 3,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        const Icon(Icons.save,
-                                            color: Colors.white, size: 20),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          'Save Silent Zone',
-                                          style: AppTheme.button,
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
+                return _buildBottomSheetContent(context, authProvider, zoneProvider, scrollController);
               },
             ),
 
@@ -546,15 +360,21 @@ class _MapScreenState extends State<MapScreen> {
 
     final success = await zoneProvider.addZone(zone);
 
-    if (success) {
+    if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Zone "${zone.name}" created successfully'),
+          content: Text('Zone "${zone.name}" created! Move to that location to activate.'),
           backgroundColor: AppTheme.successColor,
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: 3),
         ),
       );
-      Navigator.pop(context);
+      // Reset form so user can add another zone (do NOT pop - we're inside IndexedStack)
+      setState(() {
+        _selectedLocation = null;
+        _zoneName = '';
+        _markers.clear();
+        _circles.clear();
+      });
     }
   }
 
@@ -585,5 +405,356 @@ class _MapScreenState extends State<MapScreen> {
       case ZoneType.other:
         return 'Other';
     }
+  }
+
+  IconData _getTypeIcon(ZoneType type) {
+    switch (type) {
+      case ZoneType.office:
+        return Icons.business_rounded;
+      case ZoneType.mosque:
+        return Icons.mosque_rounded;
+      case ZoneType.hospital:
+        return Icons.local_hospital_rounded;
+      case ZoneType.classroom:
+        return Icons.school_rounded;
+      case ZoneType.library:
+        return Icons.library_books_rounded;
+      case ZoneType.cinema:
+        return Icons.movie_creation_rounded;
+      case ZoneType.other:
+        return Icons.place_rounded;
+    }
+  }
+
+  Widget _buildBottomSheetContent(
+    BuildContext context, 
+    AuthProvider authProvider, 
+    ZoneProvider zoneProvider,
+    ScrollController scrollController,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withValues(alpha: 0.15),
+            blurRadius: 24,
+            offset: const Offset(0, -8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 8),
+            child: Center(
+              child: Container(
+                width: 48,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2.5),
+                ),
+              ),
+            ),
+          ),
+          
+          // Content
+          Expanded(
+            child: ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+              children: [
+                Text(
+                  'Create Silent Zone',
+                  style: AppTheme.headline2.copyWith(fontSize: 24),
+                ),
+                const SizedBox(height: 24),
+
+                // Location Card
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.05),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.15)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.location_on_rounded, color: AppTheme.primaryColor, size: 24),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Location Selected', 
+                                style: AppTheme.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Lat: ${_selectedLocation!.latitude.toStringAsFixed(4)}, Lng: ${_selectedLocation!.longitude.toStringAsFixed(4)}',
+                              style: AppTheme.bodySmall.copyWith(color: AppTheme.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.check_circle_rounded, color: AppTheme.successColor),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Zone Name
+                TextFormField(
+                  decoration: InputDecoration(
+                    labelText: 'Zone Name',
+                    hintText: 'e.g., Central Office, Grand Mosque',
+                    prefixIcon: Icon(Icons.edit_location_alt_rounded, color: AppTheme.primaryColor),
+                    filled: true,
+                    fillColor: Colors.grey.shade50,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(color: AppTheme.primaryColor, width: 2),
+                    ),
+                  ),
+                  onChanged: (value) => _zoneName = value,
+                ),
+                const SizedBox(height: 24),
+
+                // Zone Type
+                Text(
+                  'Category',
+                  style: AppTheme.headline3.copyWith(fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 12,
+                  children: _zoneTypes.map((type) {
+                    final isSelected = _selectedType == type;
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      child: ChoiceChip(
+                        avatar: Icon(
+                          _getTypeIcon(type), 
+                          size: 18, 
+                          color: isSelected ? Colors.white : AppTheme.textSecondary
+                        ),
+                        label: Text(_getTypeLabel(type)),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() => _selectedType = type);
+                        },
+                        backgroundColor: Colors.grey.shade100,
+                        selectedColor: AppTheme.primaryColor,
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : AppTheme.textSecondary,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 24),
+
+                // Sound Profile
+                Text(
+                  'Sound Profile',
+                  style: AppTheme.headline3.copyWith(fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      _buildProfileOption(SoundProfile.silent, 'Silent', Icons.volume_off_rounded, AppTheme.silentZoneColor),
+                      _buildProfileOption(SoundProfile.vibration, 'Vibrate', Icons.vibration_rounded, AppTheme.vibrationZoneColor),
+                      _buildProfileOption(SoundProfile.normal, 'Normal', Icons.volume_up_rounded, AppTheme.normalZoneColor),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Radius
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Coverage Radius',
+                      style: AppTheme.headline3.copyWith(fontSize: 16),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${_radius.toInt()} m',
+                        style: TextStyle(
+                          color: AppTheme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderThemeData(
+                    trackHeight: 6,
+                    activeTrackColor: AppTheme.primaryColor,
+                    inactiveTrackColor: Colors.grey.shade200,
+                    thumbColor: Colors.white,
+                    overlayColor: AppTheme.primaryColor.withValues(alpha: 0.2),
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 14, elevation: 4),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 24),
+                  ),
+                  child: Slider(
+                    value: _radius,
+                    min: 50,
+                    max: 500,
+                    divisions: 9,
+                    onChanged: (value) {
+                      setState(() {
+                        _radius = value;
+                        _updateMarkers();
+                      });
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('50m', style: AppTheme.bodySmall.copyWith(color: Colors.grey.shade500)),
+                      Text('250m', style: AppTheme.bodySmall.copyWith(color: Colors.grey.shade500)),
+                      Text('500m', style: AppTheme.bodySmall.copyWith(color: Colors.grey.shade500)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+
+                // Save Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: ElevatedButton(
+                    onPressed: () => _saveZone(authProvider, zoneProvider),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                      elevation: 8,
+                      shadowColor: AppTheme.primaryColor.withValues(alpha: 0.4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                    child: zoneProvider.isLoading
+                        ? const SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 3,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.add_location_alt_rounded, size: 24),
+                              SizedBox(width: 12),
+                              Text(
+                                'Create Silent Zone',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileOption(SoundProfile profile, String label, IconData icon, Color color) {
+    final isSelected = _selectedProfile == profile;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedProfile = profile),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? Colors.white : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ]
+                : null,
+          ),
+          child: Column(
+            children: [
+              Icon(
+                icon,
+                color: isSelected ? color : Colors.grey.shade400,
+                size: 24,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? AppTheme.textPrimary : Colors.grey.shade500,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

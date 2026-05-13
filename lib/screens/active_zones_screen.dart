@@ -481,10 +481,10 @@ class _ActiveZonesScreenState extends State<ActiveZonesScreen>
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _DeactivateSheet(
+      builder: (sheetContext) => _DeactivateSheet(
         zone: zone,
         onConfirm: () async {
-          Navigator.pop(context);
+          Navigator.pop(sheetContext); // use sheet's own context
           await zoneProvider.toggleZoneActive(zone.id);
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -824,23 +824,19 @@ class _ActiveZonesScreenState extends State<ActiveZonesScreen>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _DeleteSheet(
+      builder: (sheetContext) => _DeleteSheet(
         zone: zone,
         onConfirm: () async {
-          Navigator.pop(context); // close sheet
+          Navigator.pop(sheetContext); // close sheet with its own context
           final success = await provider.deleteZone(zone.id);
-          if (success) {
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Zone "${zone.name}" deleted'),
-                backgroundColor: AppTheme.successColor,
-              ),
-            );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Failed to delete zone'),
-                backgroundColor: AppTheme.errorColor,
+                content: Text(success
+                    ? 'Zone "${zone.name}" deleted'
+                    : 'Failed to delete zone'),
+                backgroundColor:
+                    success ? AppTheme.successColor : AppTheme.errorColor,
               ),
             );
           }

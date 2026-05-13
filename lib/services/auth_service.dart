@@ -81,6 +81,16 @@ class AuthService {
     await _auth.signOut();
   }
 
+  Future<void> deleteAccount() async {
+    User? firebaseUser = _auth.currentUser;
+    if (firebaseUser != null) {
+      // Delete user document from firestore
+      await _firestore.collection('users').doc(firebaseUser.uid).delete();
+      // Delete user from firebase auth
+      await firebaseUser.delete();
+    }
+  }
+
   Future<void> updateUserProfile(UserModel user) async {
     await _firestore.collection('users').doc(user.uid).update(user.toJson());
   }

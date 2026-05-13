@@ -33,9 +33,9 @@ class MainActivity : FlutterActivity() {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
                             !notificationManager.isNotificationPolicyAccessGranted
                         ) {
-                            // Open DND settings so user can grant permission
-                            startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS))
-                            result.error("PERMISSION_REQUIRED", "DND permission required", null)
+                            // No DND permission — fall back to vibrate silently
+                            audioManager.ringerMode = AudioManager.RINGER_MODE_VIBRATE
+                            result.success(null)
                         } else {
                             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
                             result.success(null)

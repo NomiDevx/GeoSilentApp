@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
+import 'package:geocoding/geocoding.dart';
 import '../services/location_service.dart';
 import '../models/zone_model.dart';
 
@@ -10,6 +11,7 @@ class LocationProvider with ChangeNotifier {
   bool _isInSilentZone = false;
   SilentZone? _currentSilentZone;
   StreamSubscription<Position>? _locationSubscription;
+  String _locationName = 'Locating...';
 
   Position? get currentPosition => _currentPosition;
   bool get isTracking => _isTracking;
@@ -31,6 +33,7 @@ class LocationProvider with ChangeNotifier {
     _locationSubscription = LocationService.getLocationStream().listen(
       (position) {
         _currentPosition = position;
+        _updateLocationName(position);
         notifyListeners();
       },
       onError: (error) {
@@ -78,11 +81,29 @@ class LocationProvider with ChangeNotifier {
         '${_currentPosition!.longitude.toStringAsFixed(4)}';
   }
 
+  // Update location name via reverse geocoding
+  Future<void> _updateLocationName(Position pos) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        final name = [place.street, place.subLocality, place.locality]
+            .where((s) => s != null && s.isNotEmpty)
+            .join(', ');
+        
+        _locationName = name.isNotEmpty ? name : 'Unknown Location';
+        notifyListeners();
+      }
+    } catch (e) {
+      _locationName = '${pos.latitude.toStringAsFixed(3)}, ${pos.longitude.toStringAsFixed(3)}';
+      notifyListeners();
+    }
+  }
+
   // Get location name (address or coordinates)
   String get locationName {
     if (_currentPosition == null) return 'No Location';
-    // For now, return a simple format. In future, you can use reverse geocoding
-    return 'Location Active';
+    return _locationName;
   }
 
   @override

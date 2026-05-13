@@ -52,4 +52,30 @@ class UserModel {
       locationHistory: Map<String, dynamic>.from(json['locationHistory'] ?? {}),
     );
   }
+
+  UserModel copyWith({
+    String? uid,
+    String? email,
+    String? name,
+    String? phone,
+    String? address,
+    String? profileImage,
+    DateTime? createdAt,
+    DateTime? lastLogin,
+    List<String>? preferences,
+    Map<String, dynamic>? locationHistory,
+  }) {
+    return UserModel(
+      uid: uid ?? this.uid,
+      email: email ?? this.email,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      address: address ?? this.address,
+      profileImage: profileImage ?? this.profileImage,
+      createdAt: createdAt ?? this.createdAt,
+      lastLogin: lastLogin ?? this.lastLogin,
+      preferences: preferences ?? this.preferences,
+      locationHistory: locationHistory ?? this.locationHistory,
+    );
+  }
 }

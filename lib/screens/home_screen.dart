@@ -33,17 +33,14 @@ class _HomeScreenState extends State<HomeScreen>
       duration: const Duration(milliseconds: 500),
     );
     _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(
-          parent: _animationController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     _animationController.forward();
 
     // Initialize providers after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authProvider =
-          Provider.of<AuthProvider>(context, listen: false);
-      final zoneProvider =
-          Provider.of<ZoneProvider>(context, listen: false);
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final zoneProvider = Provider.of<ZoneProvider>(context, listen: false);
       final locationProvider =
           Provider.of<LocationProvider>(context, listen: false);
 
@@ -79,11 +76,15 @@ class _HomeScreenState extends State<HomeScreen>
       // ── IndexedStack keeps all tabs alive, no push/pop needed ──
       body: IndexedStack(
         index: _selectedIndex,
-        children: const [
-          _HomeTab(),
-          MapScreen(),
-          ActiveZonesScreen(),
-          ProfileScreen(),
+        children: [
+          _HomeTab(
+            onNavigateToMap: () {
+              setState(() => _selectedIndex = 1);
+            },
+          ),
+          const MapScreen(),
+          const ActiveZonesScreen(),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: CustomCurvedNavBar(
@@ -101,7 +102,9 @@ class _HomeScreenState extends State<HomeScreen>
 // Home tab content (extracted from old HomeScreen.build)
 // ─────────────────────────────────────────────────────────────────────────────
 class _HomeTab extends StatefulWidget {
-  const _HomeTab();
+  final VoidCallback onNavigateToMap;
+
+  const _HomeTab({required this.onNavigateToMap});
 
   @override
   State<_HomeTab> createState() => _HomeTabState();
@@ -239,7 +242,7 @@ class _HomeTabState extends State<_HomeTab>
                 children: [
                   Expanded(
                     child: _buildInfoButton(
-                      icon: Icons.location_on_rounded,
+                      icon: Icons.pin_drop_outlined,
                       label: 'Current Location',
                       value: locationProvider.locationName,
                       onTap: () {},
@@ -248,7 +251,7 @@ class _HomeTabState extends State<_HomeTab>
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildInfoButton(
-                      icon: Icons.place_rounded,
+                      icon: Icons.phone_android_rounded,
                       label: 'Active Zones',
                       value: '${zoneProvider.activeZonesCount}',
                       onTap: () {},
@@ -259,15 +262,8 @@ class _HomeTabState extends State<_HomeTab>
                     child: _buildInfoButton(
                       icon: Icons.add_location_alt_rounded,
                       label: 'Add Zone',
-                      value: 'Tap to add',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MapScreen(),
-                          ),
-                        );
-                      },
+                      value: 'Use Map tab',
+                      onTap: widget.onNavigateToMap,
                       isAddButton: true,
                     ),
                   ),
@@ -329,8 +325,7 @@ class _HomeTabState extends State<_HomeTab>
                   : zoneProvider.zones.isEmpty
                       ? Center(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(vertical: 32.0),
+                            padding: const EdgeInsets.symmetric(vertical: 32.0),
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -367,8 +362,7 @@ class _HomeTabState extends State<_HomeTab>
                             final zone = zoneProvider.zones[index];
                             return AnimatedZoneCard(
                               zone: zone,
-                              isActive:
-                                  zoneProvider.currentZone?.id == zone.id,
+                              isActive: zoneProvider.currentZone?.id == zone.id,
                               onTap: () {},
                             );
                           },
@@ -393,44 +387,60 @@ class _HomeTabState extends State<_HomeTab>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
-        constraints: const BoxConstraints(minHeight: 130),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        constraints: const BoxConstraints(minHeight: 140),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
+          color: isAddButton ? AppTheme.primaryColor : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
             BoxShadow(
-              color: Colors.black12,
-              blurRadius: 10,
-              offset: Offset(0, 4),
+              color: isAddButton
+                  ? AppTheme.primaryColor.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.04),
+              blurRadius: 16,
+              offset: const Offset(0, 6),
             ),
           ],
           border: isAddButton
-              ? Border.all(color: AppTheme.primaryColor, width: 2)
-              : null,
+              ? null
+              : Border.all(color: Colors.grey.shade100, width: 1.5),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: AppTheme.primaryColor, size: 30),
-            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: isAddButton
+                    ? Colors.white.withValues(alpha: 0.2)
+                    : AppTheme.primaryColor.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: isAddButton ? Colors.white : AppTheme.primaryColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 12),
             Text(
               label,
               style: AppTheme.bodySmall.copyWith(
-                color: AppTheme.textSecondary,
-                fontWeight: FontWeight.w500,
+                color: isAddButton ? Colors.white70 : AppTheme.textSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 11,
               ),
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
             Text(
               value,
               style: AppTheme.bodyMedium.copyWith(
-                color: isAddButton
-                    ? AppTheme.primaryColor
-                    : AppTheme.textPrimary,
-                fontWeight: FontWeight.bold,
+                color: isAddButton ? Colors.white : AppTheme.textPrimary,
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,

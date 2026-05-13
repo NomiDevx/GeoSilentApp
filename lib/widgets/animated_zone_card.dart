@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 import '../theme.dart';
 import '../models/zone_model.dart';
 
@@ -64,7 +63,9 @@ class _AnimatedZoneCardState extends State<AnimatedZoneCard>
         child: GestureDetector(
           onTap: widget.onTap,
           child: Card(
-            color: widget.zone.color.withOpacity(0.1),
+            color: widget.zone.isActive 
+                ? widget.zone.color.withOpacity(0.1)
+                : Colors.grey.withOpacity(0.1),
             elevation: _isHovering ? 8 : 4,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -75,57 +76,62 @@ class _AnimatedZoneCardState extends State<AnimatedZoneCard>
                 width: 2,
               ),
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    widget.zone.icon,
-                    style: const TextStyle(fontSize: 40),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    widget.zone.name,
-                    style: AppTheme.headline3.copyWith(
-                      color: AppTheme.textPrimary,
+            child: Opacity(
+              opacity: widget.zone.isActive ? 1.0 : 0.6,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      widget.zone.icon,
+                      style: const TextStyle(fontSize: 40),
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${widget.zone.radius.toStringAsFixed(0)}m radius',
-                    style: AppTheme.bodySmall.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        widget.zone.isActive
-                            ? Icons.notifications_active
-                            : Icons.notifications_off,
-                        color: widget.zone.isActive
-                            ? AppTheme.successColor
-                            : AppTheme.textHint,
-                        size: 16,
+                    const SizedBox(height: 12),
+                    Text(
+                      widget.zone.name,
+                      style: AppTheme.headline3.copyWith(
+                        color: widget.zone.isActive 
+                            ? AppTheme.textPrimary
+                            : AppTheme.textSecondary,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        widget.zone.isActive ? 'Active' : 'Inactive',
-                        style: AppTheme.bodySmall.copyWith(
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${widget.zone.radius.toStringAsFixed(0)}m radius',
+                      style: AppTheme.bodySmall.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          widget.zone.isActive
+                              ? Icons.notifications_active
+                              : Icons.notifications_off,
                           color: widget.zone.isActive
                               ? AppTheme.successColor
                               : AppTheme.textHint,
+                          size: 16,
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.zone.isActive ? 'Active' : 'Inactive',
+                          style: AppTheme.bodySmall.copyWith(
+                            color: widget.zone.isActive
+                                ? AppTheme.successColor
+                                : AppTheme.textHint,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

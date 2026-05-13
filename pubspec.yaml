@@ -43,6 +43,7 @@ dependencies:
   # Remove problematic packages for now
   permission_handler: ^12.0.1 # Temporarily removed due to v1 embedding issues
   flutter_dotenv: ^6.0.1
+  geocoding: ^4.0.0
   # flutter_local_notifications: ^15.0.0
   # workmanager: ^0.5.1
 

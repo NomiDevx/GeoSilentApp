@@ -37,7 +37,8 @@ class _ZonesPageState extends State<ZonesPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Zone'),
-        content: Text('Are you sure you want to delete "${_zones[index].name}"?'),
+        content:
+            Text('Are you sure you want to delete "${_zones[index].name}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -107,8 +108,8 @@ class _ZonesPageState extends State<ZonesPage> {
                       children: [
                         Icon(
                           Icons.location_on,
-                          color: zone.isActive 
-                              ? AppTheme.primaryColor 
+                          color: zone.isActive
+                              ? AppTheme.primaryColor
                               : Colors.grey,
                           size: 32,
                         ),
@@ -147,11 +148,9 @@ class _ZonesPageState extends State<ZonesPage> {
                         IconButton(
                           onPressed: () => _toggleZoneActive(index),
                           icon: Icon(
-                            zone.isActive 
-                                ? Icons.toggle_on 
-                                : Icons.toggle_off,
-                            color: zone.isActive 
-                                ? AppTheme.primaryColor 
+                            zone.isActive ? Icons.toggle_on : Icons.toggle_off,
+                            color: zone.isActive
+                                ? AppTheme.primaryColor
                                 : Colors.grey,
                             size: 40,
                           ),
