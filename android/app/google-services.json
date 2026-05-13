@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "131961058900",
+    "project_id": "ideapresupdated",
+    "storage_bucket": "ideapresupdated.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:131961058900:android:217b09c15e1a30aacd1fc1",
+        "android_client_info": {
+          "package_name": "com.example.geo_silent"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU4rUuTdu_PvtFjY016FseMaQmn4o9WOE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
