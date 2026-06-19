@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geo Silent - Legal Documents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #1d4ed8;
+            --primary-light: #eff6ff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-hint: #94a3b8;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --border: #e2e8f0;
+            --accent: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.6;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo-container {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2);
+        }
+
+        .logo-icon {
+            font-size: 32px;
+            color: white;
+            line-height: 1;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .subtitle {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        /* Tabs System */
+        .tabs-header {
+            display: flex;
+            background-color: var(--border);
+            border-radius: 16px;
+            padding: 6px;
+            margin-bottom: 32px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .tab-btn {
+            flex: 1;
+            border: none;
+            outline: none;
+            background-color: transparent;
+            padding: 14px 20px;
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tab-btn.active {
+            background-color: var(--bg-card);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .tab-content {
+            display: none;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.02);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            margin-bottom: 24px;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary-light);
+            padding-bottom: 12px;
+        }
+
+        h3 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 28px;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        p, ul {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            text-align: justify;
+        }
+
+        ul {
+            padding-left: 20px;
+            margin-bottom: 24px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .meta-date {
+            font-size: 14px;
+            color: var(--text-hint);
+            font-style: italic;
+            margin-bottom: 20px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 48px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-hint);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 24px 12px;
+            }
+            .tab-content {
+                padding: 24px 16px;
+            }
+            h1 {
+                font-size: 26px;
+            }
+            h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <div class="logo-container">
+            <!-- Location Off Icon Representation -->
+            <span class="logo-icon">🔕</span>
+        </div>
+        <h1>Geo Silent</h1>
+        <div class="subtitle">Location-Based Ringer Management System</div>
+    </header>
+
+    <div class="tabs-header">
+        <button class="tab-btn active" onclick="openTab(event, 'privacy')">Privacy Policy</button>
+        <button class="tab-btn" onclick="openTab(event, 'terms')">Terms of Service</button>
+    </div>
+
+    <!-- Privacy Policy Tab -->
+    <div id="privacy" class="tab-content active">
+        <h2>Privacy Policy</h2>
+        <div class="meta-date">Last Updated: June 19, 2026</div>
+        
+        <p>Geo Silent is committed to protecting your privacy. This Privacy Policy describes how we collect, use, store, and secure your personal and location data when you use the Geo Silent mobile application.</p>
+
+        <h3>1. Information We Collect</h3>
+        <p>In order to provide our core service, we collect and process the following information:</p>
+        <ul>
+            <li><strong>Precise Location Data:</strong> We collect precise real-time location data (GPS coordinates) to determine when you enter or exit your configured silent zones.</li>
+            <li><strong>Background Location Access:</strong> Because the primary feature of Geo Silent is to automatically silence or change your phone's ringer mode when you arrive at a specific location, the app requires location access in the background. Location data is monitored in the background even when the app is closed, not in use, or running in the background.</li>
+            <li><strong>Account Credentials:</strong> When you register an account, we collect basic details such as your name, email address, and secure authentication tokens.</li>
+        </ul>
+
+        <h3>2. How We Use Your Data</h3>
+        <p>We process your data for the following specific purposes:</p>
+        <ul>
+            <li>To verify your identity and authenticate your account.</li>
+            <li>To save and synchronize your silent zone configurations securely to Firebase Firestore.</li>
+            <li>To trigger native system calls (Silent, Vibrate, or Normal ringer modes) when you enter or exit defined geographic zones.</li>
+        </ul>
+
+        <h3>3. Data Sharing & Disclosure</h3>
+        <p>Your privacy is our highest priority. <strong>We do not sell, rent, trade, or share your location data or personal credentials with third-party advertisers, marketers, or analytics companies.</strong> Your location coordinates are processed locally on-device for ringer control and synchronized securely via encrypted connections to Firebase Firestore solely for syncing across your devices.</p>
+
+        <h3>4. Data Security & Retention</h3>
+        <p>All zone data and location records are synchronized using secure HTTPS connections. Location history is stored temporarily on-device and is not permanently logged on our servers. You have the right to request deletion of your data at any time.</p>
+
+        <h3>5. User Choice & Deletion</h3>
+        <p>You can manage, edit, or delete any silent zone directly inside the app. If you wish to delete all your personal data, you can permanently delete your account and all associated zones using the "Delete Account" button in the Privacy & Security settings. This action immediately and permanently removes all your data from our Firestore database.</p>
+    </div>
+
+    <!-- Terms of Service Tab -->
+    <div id="terms" class="tab-content">
+        <h2>Terms of Service</h2>
+        <div class="meta-date">Last Updated: June 19, 2026</div>
+
+        <p>By downloading, installing, or using the Geo Silent application, you agree to comply with and be bound by the following Terms of Service. If you do not agree, please do not use the app.</p>
+
+        <h3>1. Scope of Service</h3>
+        <p>Geo Silent is a utility application designed to automatically adjust your mobile phone's ringer mode based on location boundaries configured by you. The service is provided "as is" for your personal, non-commercial convenience.</p>
+
+        <h3>2. Device Permissions Required</h3>
+        <p>To enable the automatic silencing features, you must grant the following system-level permissions:</p>
+        <ul>
+            <li><strong>Location Permissions:</strong> Must be set to "Allow all the time" for the background foreground service to track location boundaries reliably when the app is closed.</li>
+            <li><strong>Do Not Disturb (DND) Access:</strong> Required to change ringer mode to "Silent" on Android. If DND access is not granted, the app will default to vibrating.</li>
+        </ul>
+
+        <h3>3. Disclaimer & Limits of Liability</h3>
+        <p>We build our services to be highly reliable, but background processes are managed strictly by the Android Operating System:</p>
+        <ul>
+            <li><strong>OS Battery Throttling:</strong> Android aggressively optimizes battery use. The OS may delay background location updates depending on your battery levels, power management profiles, or device status. We are not liable for missed notifications or phone calls resulting from delayed geofence triggers caused by OS restrictions.</li>
+            <li><strong>GPS Accuracy:</strong> Geofencing accuracy depends on GPS, Wi-Fi networks, and cellular towers. Accuracy may vary depending on weather, buildings, and geography.</li>
+        </ul>
+
+        <h3>4. Account & Security</h3>
+        <p>You are responsible for keeping your login credentials secure. You agree to notify us immediately of any unauthorized access to your account.</p>
+
+        <h3>5. Termination</h3>
+        <p>We reserve the right to suspend or terminate your account or access to the app at our sole discretion, without notice, for violating these terms.</p>
+    </div>
+
+    <footer>
+        &copy; 2026 Geo Silent. All rights reserved.
+    </footer>
+</div>
+
+<script>
+    function openTab(evt, tabId) {
+        // Hide all tab contents
+        const tabContents = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < tabContents.length; i++) {
+            tabContents[i].classList.remove("active");
+        }
+
+        // Deactivate all tab buttons
+        const tabButtons = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < tabButtons.length; i++) {
+            tabButtons[i].classList.remove("active");
+        }
+
+        // Show selected tab content and set active class on clicked button
+        document.getElementById(tabId).classList.add("active");
+        evt.currentTarget.classList.add("active");
+    }
+</script>
+
+</body>
+</html>

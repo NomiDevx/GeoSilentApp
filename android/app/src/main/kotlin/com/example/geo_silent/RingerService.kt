@@ -49,28 +49,40 @@ class RingerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_START -> {
-                val zonesJson = intent.getStringExtra(EXTRA_ZONES)
-                if (zonesJson != null) {
-                    zones = parseZones(zonesJson)
+        if (intent == null || intent.action == null) {
+            // Sticky service restart - reload zones from SharedPreferences
+            zones = loadZonesFromPrefs()
+            startForeground(NOTIFICATION_ID, buildNotification("Monitoring ${zones.size} zone(s)..."))
+            startLocationUpdates()
+            isRunning = true
+        } else {
+            when (intent.action) {
+                ACTION_START -> {
+                    val zonesJson = intent.getStringExtra(EXTRA_ZONES)
+                    if (zonesJson != null) {
+                        zones = parseZones(zonesJson)
+                        saveZonesToPrefs(zonesJson)
+                    } else {
+                        zones = loadZonesFromPrefs()
+                    }
+                    startForeground(NOTIFICATION_ID, buildNotification("Monitoring ${zones.size} zone(s)..."))
+                    startLocationUpdates()
+                    isRunning = true
                 }
-                startForeground(NOTIFICATION_ID, buildNotification("Monitoring ${zones.size} zone(s)..."))
-                startLocationUpdates()
-                isRunning = true
-            }
-            ACTION_STOP -> {
-                stopLocationUpdates()
-                restoreNormalMode()
-                isRunning = false
-                stopSelf()
-            }
-            ACTION_UPDATE_ZONES -> {
-                val zonesJson = intent.getStringExtra(EXTRA_ZONES)
-                if (zonesJson != null) {
-                    zones = parseZones(zonesJson)
+                ACTION_STOP -> {
+                    stopLocationUpdates()
+                    restoreNormalMode()
+                    isRunning = false
+                    stopSelf()
                 }
-                updateNotification("Monitoring ${zones.size} zone(s)...")
+                ACTION_UPDATE_ZONES -> {
+                    val zonesJson = intent.getStringExtra(EXTRA_ZONES)
+                    if (zonesJson != null) {
+                        zones = parseZones(zonesJson)
+                        saveZonesToPrefs(zonesJson)
+                    }
+                    updateNotification("Monitoring ${zones.size} zone(s)...")
+                }
             }
         }
         return START_STICKY
@@ -183,6 +195,20 @@ class RingerService : Service() {
             e.printStackTrace()
         }
         return result
+    }
+
+    private fun saveZonesToPrefs(zonesJson: String) {
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        prefs.edit().putString("flutter.silent_zones", zonesJson).apply()
+    }
+
+    private fun loadZonesFromPrefs(): List<ZoneData> {
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        var zonesJson = prefs.getString("flutter.silent_zones", null)
+        if (zonesJson == null) {
+            zonesJson = prefs.getString("silent_zones", null)
+        }
+        return if (zonesJson != null) parseZones(zonesJson) else emptyList()
     }
 
     private fun createNotificationChannel() {

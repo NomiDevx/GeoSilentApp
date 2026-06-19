@@ -3,6 +3,7 @@ import 'package:geo_silent/services/location_service.dart';
 import '../services/firestore_service.dart';
 import '../models/zone_model.dart';
 import '../services/ringer_service.dart';
+import '../services/storage_service.dart';
 
 class ZoneProvider with ChangeNotifier {
   final FirestoreService _firestoreService = FirestoreService();
@@ -35,10 +36,28 @@ class ZoneProvider with ChangeNotifier {
       }
     }
 
+    // 1. Load from local cache first for offline support and instant startup
+    try {
+      final cachedZones = await StorageService.loadZones();
+      if (cachedZones.isNotEmpty) {
+        _zones = cachedZones.where((z) => z.userId == userId).toList();
+        await RingerService.startService(_zones);
+        
+        if (_lastLat != null && _lastLng != null) {
+          checkCurrentLocation(_lastLat!, _lastLng!);
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error loading cached zones: $e');
+    }
+
+    // 2. Setup Firestore listener for real-time sync
     try {
       _firestoreService.getUserZones(userId).listen((zones) async {
         _zones = zones;
-        RingerService.startService(_zones);
+        await StorageService.saveZones(_zones);
+        await RingerService.startService(_zones);
         
         // Immediately re-evaluate location against the newly fetched zones
         if (_lastLat != null && _lastLng != null) {
@@ -57,26 +76,33 @@ class ZoneProvider with ChangeNotifier {
 
   // Add zone
   Future<bool> addZone(SilentZone zone) async {
-    _isLoading = true;
+    // Optimistically add zone locally to avoid any visual lag/spinner
+    final previousZones = List<SilentZone>.from(_zones);
+    
+    if (!_zones.any((z) => z.id == zone.id)) {
+      _zones.add(zone);
+    }
+    await StorageService.saveZones(_zones);
+    await RingerService.updateZones(_zones);
+    
+    // Immediately check location
+    if (_lastLat != null && _lastLng != null) {
+      checkCurrentLocation(_lastLat!, _lastLng!);
+    }
     notifyListeners();
 
     try {
       await _firestoreService.addZone(zone);
-      // Note: the firestore stream will also update _zones shortly, but we update locally for instant feedback
-      _zones.add(zone);
+      return true;
+    } catch (e) {
+      // Rollback on failure
+      _zones = previousZones;
+      await StorageService.saveZones(_zones);
       await RingerService.updateZones(_zones);
-      
-      // Immediately check if we are already inside the newly added zone
       if (_lastLat != null && _lastLng != null) {
         checkCurrentLocation(_lastLat!, _lastLng!);
       }
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
       _errorMessage = e.toString();
-      _isLoading = false;
       notifyListeners();
       return false;
     }
@@ -84,23 +110,36 @@ class ZoneProvider with ChangeNotifier {
 
   // Update zone
   Future<bool> updateZone(SilentZone zone) async {
-    _isLoading = true;
+    // Optimistically update zone locally
+    final previousZones = List<SilentZone>.from(_zones);
+    final index = _zones.indexWhere((z) => z.id == zone.id);
+    
+    if (index != -1) {
+      _zones[index] = zone;
+    } else {
+      _zones.add(zone);
+    }
+    await StorageService.saveZones(_zones);
+    await RingerService.updateZones(_zones);
+    
+    // Recheck location in case the radius or coordinates changed
+    if (_lastLat != null && _lastLng != null) {
+      checkCurrentLocation(_lastLat!, _lastLng!);
+    }
     notifyListeners();
 
     try {
       await _firestoreService.updateZone(zone);
-      final index = _zones.indexWhere((z) => z.id == zone.id);
-      if (index != -1) {
-        _zones[index] = zone;
-      }
-      // Push updated zones to the background service
-      await RingerService.updateZones(_zones);
-      _isLoading = false;
-      notifyListeners();
       return true;
     } catch (e) {
+      // Rollback on failure
+      _zones = previousZones;
+      await StorageService.saveZones(_zones);
+      await RingerService.updateZones(_zones);
+      if (_lastLat != null && _lastLng != null) {
+        checkCurrentLocation(_lastLat!, _lastLng!);
+      }
       _errorMessage = e.toString();
-      _isLoading = false;
       notifyListeners();
       return false;
     }
@@ -108,31 +147,42 @@ class ZoneProvider with ChangeNotifier {
 
   // Delete zone
   Future<bool> deleteZone(String zoneId) async {
-    _isLoading = true;
+    // Optimistically delete zone locally
+    final previousZones = List<SilentZone>.from(_zones);
+    final previousCurrentZone = _currentZone;
+    
+    _zones.removeWhere((zone) => zone.id == zoneId);
+    await StorageService.saveZones(_zones);
+    await RingerService.updateZones(_zones);
+
+    if (_currentZone?.id == zoneId) {
+      _currentZone = null;
+      await RingerService.setNormalMode();
+    }
+
+    if (_lastLat != null && _lastLng != null) {
+      checkCurrentLocation(_lastLat!, _lastLng!);
+    }
     notifyListeners();
 
     try {
       await _firestoreService.deleteZone(zoneId);
-      _zones.removeWhere((zone) => zone.id == zoneId);
+      return true;
+    } catch (e) {
+      // Rollback on failure
+      _zones = previousZones;
+      _currentZone = previousCurrentZone;
+      await StorageService.saveZones(_zones);
       await RingerService.updateZones(_zones);
-
-      // If the deleted zone was the current active one, clear it
-      if (_currentZone?.id == zoneId) {
-        _currentZone = null;
+      if (_currentZone != null) {
+        await RingerService.applyProfile(_currentZone!.soundProfile);
+      } else {
         await RingerService.setNormalMode();
       }
-
-      // Re-evaluate location just in case
       if (_lastLat != null && _lastLng != null) {
         checkCurrentLocation(_lastLat!, _lastLng!);
       }
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
       _errorMessage = e.toString();
-      _isLoading = false;
       notifyListeners();
       return false;
     }

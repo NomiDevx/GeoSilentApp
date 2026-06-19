@@ -19,10 +19,10 @@ class LocationProvider with ChangeNotifier {
   SilentZone? get currentSilentZone => _currentSilentZone;
 
   // Start location tracking
-  Future<void> startTracking() async {
+  Future<void> startTracking(BuildContext context) async {
     if (_isTracking) return;
 
-    final hasPermission = await LocationService.requestLocationPermission();
+    final hasPermission = await LocationService.requestLocationPermission(context);
     if (!hasPermission) {
       throw Exception('Location permission not granted');
     }

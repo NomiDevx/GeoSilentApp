@@ -99,6 +99,11 @@ class AppTheme {
       primaryColor: primaryColor,
       primaryColorDark: primaryDark,
       scaffoldBackgroundColor: backgroundColor,
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: primaryColor,
+        selectionColor: primaryLight.withOpacity(0.4),
+        selectionHandleColor: primaryColor,
+      ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         foregroundColor: textPrimary,

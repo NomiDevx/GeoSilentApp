@@ -90,31 +90,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Column(
           children: [
             Center(
-              child: Stack(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                      border: Border.all(color: AppTheme.primaryColor, width: 2),
-                    ),
-                    child: Icon(Icons.person, size: 50, color: AppTheme.primaryColor),
-                  ),
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppTheme.primaryColor,
-                      ),
-                      child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
-                    ),
-                  ),
-                ],
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  border: Border.all(color: AppTheme.primaryColor, width: 2),
+                ),
+                child: Icon(Icons.person, size: 50, color: AppTheme.primaryColor),
               ),
             ),
             const SizedBox(height: 32),

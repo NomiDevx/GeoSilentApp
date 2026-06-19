@@ -10,7 +10,7 @@ import '../widgets/curved_nav_bar.dart';
 import '../theme.dart';
 import 'map_screen.dart';
 import 'profile_screen.dart';
-import 'active_zones_screen.dart';
+import 'zones_page.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen>
 
       if (authProvider.user != null) {
         zoneProvider.initializeZones(authProvider.user!.uid);
-        locationProvider.startTracking();
+        locationProvider.startTracking(context);
       }
 
       // React to location updates AFTER the frame is done, not during build
@@ -83,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen>
             },
           ),
           const MapScreen(),
-          const ActiveZonesScreen(),
+          const ZonesPage(),
           const ProfileScreen(),
         ],
       ),

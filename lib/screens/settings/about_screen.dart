@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme.dart';
+import 'legal_screen.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({Key? key}) : super(key: key);
@@ -28,8 +29,28 @@ class AboutScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Version 1.0.0', style: AppTheme.bodyMedium),
             const SizedBox(height: 48),
-            TextButton(onPressed: () {}, child: const Text('Terms of Service')),
-            TextButton(onPressed: () {}, child: const Text('Privacy Policy')),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LegalScreen(initialTabIndex: 1),
+                  ),
+                );
+              },
+              child: const Text('Terms of Service'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LegalScreen(initialTabIndex: 0),
+                  ),
+                );
+              },
+              child: const Text('Privacy Policy'),
+            ),
           ],
         ),
       ),

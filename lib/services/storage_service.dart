@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/zone.dart';
+import '../models/zone_model.dart';
 
 class StorageService {
   static const String _zonesKey = 'silent_zones';
